@@ -92,5 +92,8 @@
     <ClInclude Include="Sources\Capacities\WeaponRangeCapacity.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Sources\Utils\Point.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

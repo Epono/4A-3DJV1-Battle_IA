@@ -1,14 +1,11 @@
 #include "Point.h"
 #include <ostream>
 #include <iomanip>
-#include <cmath>
-
-
+#include <algorithm>
 
 Point::Point() : m_x(0), m_y(0) {}
 
-Point::Point(float x, float y) : m_x(x), m_y(y)
-{}
+Point::Point(float x, float y) : m_x(x), m_y(y) {}
 
 Point Point::getNextPosWithSpeed(const Point& position, float speed) const
 {
@@ -16,8 +13,11 @@ Point Point::getNextPosWithSpeed(const Point& position, float speed) const
 	double distance = Point::getDistance(*this, position);
 	if (distance > speed)
 	{
-		float x = fmod((speed / distance) * (position.m_x - this->m_x) + this->m_x, 100.0);
-		float y = fmod((speed / distance) * (position.m_y - this->m_y) + this->m_y, 100.0);
+		float xTemp = (speed / distance) * (position.m_x - this->m_x) + this->m_x;
+		float yTemp = (speed / distance) * (position.m_y - this->m_y) + this->m_y;
+
+		float x = std::min(std::max(xTemp, X_MIN), X_MAX);
+		float y = std::min(std::max(yTemp, Y_MIN), Y_MAX);
 		return Point(x, y);
 	}
 	return Point(position);

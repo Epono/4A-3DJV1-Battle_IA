@@ -15,9 +15,14 @@ Unit::Unit(int levelTotal) : m_unitId(++nbUnits)
 {
 	std::random_device rd;
 	std::default_random_engine e1(rd());
-	std::uniform_int_distribution<> uniform_dist(0.f, 100.f);
-	
-	m_unitPosition = Point(uniform_dist(e1), uniform_dist(e1));
+
+	std::uniform_int_distribution<> uniform_dist(X_MIN, X_MAX);	
+	float x = uniform_dist(e1);
+
+	uniform_dist = std::uniform_int_distribution<>(Y_MIN, Y_MAX);
+	float y = uniform_dist(e1);
+
+	m_unitPosition = Point(x, y);
 
 	uniform_dist = std::uniform_int_distribution<>(0, 15);
 	m_AICode = static_cast<AICode>(uniform_dist(e1)); //Generate the IACode randomly

@@ -39,6 +39,7 @@
     <ClInclude Include="Sources\Capacities\WeaponSpeedCapacity.h" />
     <ClInclude Include="Sources\Unit.h" />
     <ClInclude Include="Sources\UnitAI.h" />
+    <ClInclude Include="Sources\Utils\Point.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{F054FFCA-8624-4DFD-8419-61268485C25D}</ProjectGuid>

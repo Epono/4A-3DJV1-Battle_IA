@@ -3,6 +3,11 @@
 #include <math.h>
 #include <ostream>
 
+static const float X_MIN = 0.f;
+static const float X_MAX = 100.f;
+static const float Y_MIN = 0.f;
+static const float Y_MAX = 100.f;
+
 class Point
 {
     public:
@@ -18,8 +23,6 @@ class Point
         }
 		Point getNextPosWithSpeed(const Point&, float) const;
 
-		static const double MAX_X;
-		static const double MAX_Y;
     private:
 		friend std::ostream & operator<<(std::ostream &os, const Point& p);
 
