@@ -27,6 +27,7 @@
     <ClCompile Include="Sources\Utils\Point.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Extractor.h" />
     <ClInclude Include="Sources\Action.h" />
     <ClInclude Include="Sources\Army.h" />
     <ClInclude Include="Sources\Capacities\ArmorCapacity.h" />
