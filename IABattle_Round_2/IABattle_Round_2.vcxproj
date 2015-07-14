@@ -21,6 +21,8 @@
     <ClCompile Include="Sources\Capacities\WeaponDamageCapacity.cpp" />
     <ClCompile Include="Sources\Capacities\WeaponRangeCapacity.cpp" />
     <ClCompile Include="Sources\Capacities\WeaponSpeedCapacity.cpp" />
+    <ClCompile Include="Sources\Common\EsgiShader.cpp" />
+    <ClCompile Include="Sources\Common\tiny_obj_loader.cc" />
     <ClCompile Include="Sources\IABattle_Round_2.cpp" />
     <ClCompile Include="Sources\Unit.cpp" />
     <ClCompile Include="Sources\UnitAI.cpp" />
@@ -28,6 +30,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Extractor.h" />
+    <ClInclude Include="OldMain.h" />
     <ClInclude Include="Sources\Action.h" />
     <ClInclude Include="Sources\Army.h" />
     <ClInclude Include="Sources\Capacities\ArmorCapacity.h" />
@@ -38,6 +41,9 @@
     <ClInclude Include="Sources\Capacities\WeaponDamageCapacity.h" />
     <ClInclude Include="Sources\Capacities\WeaponRangeCapacity.h" />
     <ClInclude Include="Sources\Capacities\WeaponSpeedCapacity.h" />
+    <ClInclude Include="Sources\Common\EsgiShader.h" />
+    <ClInclude Include="Sources\Common\stb_image.h" />
+    <ClInclude Include="Sources\Common\tiny_obj_loader.h" />
     <ClInclude Include="Sources\Unit.h" />
     <ClInclude Include="Sources\UnitAI.h" />
     <ClInclude Include="Sources\Utils\Point.h" />
@@ -85,11 +91,12 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\Sources;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\Libs\glew-1.12.0\include;$(ProjectDir)\Libs\freeglut\include;$(ProjectDir)\Sources;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(ProjectDir)\Libs\freeglut\lib;$(ProjectDir)\Libs\glew-1.12.0\lib\Release\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -102,13 +109,14 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)\Sources;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)\Libs\glew-1.12.0\include;$(ProjectDir)\Libs\freeglut\include;$(ProjectDir)\Sources;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(ProjectDir)\Libs\freeglut\lib;$(ProjectDir)\Libs\glew-1.12.0\lib\Release\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
