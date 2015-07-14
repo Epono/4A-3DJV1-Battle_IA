@@ -396,6 +396,9 @@ void Render() {
 	glutPostRedisplay();
 }
 
+Army* armyTempA = new Army(5, 20);
+Army* armyTempB = new Army(5, 20);
+
 void Update() {
 	//printf("Je m'affiche a un rythme de 60 fps ! (je crois)\n");
 }
@@ -405,14 +408,12 @@ void DrawCube(GLuint program) {
 	float h = (float) glutGet(GLUT_WINDOW_HEIGHT);
 
 	// passage des attributs de sommet au shader
-
 	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
 	GLint positionLocation = glGetAttribLocation(program, "a_position");
 	glEnableVertexAttribArray(positionLocation);
 	glVertexAttribPointer(positionLocation, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
 
 	// variables uniformes (constantes) durant le rendu de la primitive
-
 	float projection[16];
 	//Orthographic(projection, 0, w, h, 0, -1.f, 1.f);
 	Perspective(projection, 45.f, w, h, 0.1f, 1000.f);
@@ -452,14 +453,32 @@ void DrawCube(GLuint program) {
 	GLint offsetLocation = glGetUniformLocation(program, "u_offset");
 	glUniform3f(offsetLocation, 0, 0, 0);
 
+	GLint colorLocation = glGetUniformLocation(program, "u_color");
+	glUniform3f(colorLocation, 0, 0, 0);
+
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
 
-	for(int i = -10; i <= 10; i++) {
-		for(int j = -10; j <= 10; j++) {
-			glUniform3f(offsetLocation, (i * 3) + time, j * 3, 0);
-			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
-			glDrawElements(GL_TRIANGLES, 6 * 2 * 3, GL_UNSIGNED_SHORT, 0);
-		}
+	//for(int i = -10; i <= 10; i++) {
+	//	for(int j = -10; j <= 10; j++) {
+	//		glUniform3f(offsetLocation, (i * 3) + time, j * 3, 0);
+	//		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
+	//		glDrawElements(GL_TRIANGLES, 6 * 2 * 3, GL_UNSIGNED_SHORT, 0);
+	//	}
+	//}
+
+	for(auto & u : armyTempA->getUnitList()) {
+		glUniform3f(offsetLocation, u->getPosition().getX(), u->getPosition().getY(), 0);
+		glUniform3f(colorLocation, 0.2, 0.2, 0.2);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
+		glDrawElements(GL_TRIANGLES, 6 * 2 * 3, GL_UNSIGNED_SHORT, 0);
+		//std::cout << u->getPosition() << std::endl;
+	}
+	for(auto & u : armyTempB->getUnitList()) {
+		glUniform3f(offsetLocation, u->getPosition().getX(), u->getPosition().getY(), 0);
+		glUniform3f(colorLocation, 0.8, 0.8, 0.8);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
+		glDrawElements(GL_TRIANGLES, 6 * 2 * 3, GL_UNSIGNED_SHORT, 0);
+		//std::cout << u->getPosition() << std::endl;
 	}
 }
 
@@ -480,9 +499,47 @@ int main(int argc, char* argv[]) {
 	glutMouseFunc(MouseFunc);
 	glutMotionFunc(MotionFunc);
 	glutMouseWheelFunc(MouseWheelFunc);
-	glutIdleFunc(Update);
+	//glutIdleFunc(Update);
 
-	glutMainLoop();
+
+
+
+
+	armyTempA = new Army(50, 20);
+	armyTempB = new Army(50, 20);
+
+	std::cout << std::endl;
+	std::cout << "Armee " << armyTempA->getArmyId() << " contre Armee " << armyTempB->getArmyId() << std::endl;
+	UnitAI ia;
+	int nbTours = 0;
+	std::vector<FighterWrapper> unitesCombat;
+
+	while(1) {
+		while(armyTempA->size() > 0 && armyTempB->size() > 0) {
+			nbTours++;
+			//std::cout << "========== Tour " << nbTours << " ==========" << std::endl;
+			//Récupération des unités pour le tour
+			unitesCombat.clear();
+			for(auto & u : armyTempA->getUnitList())
+				unitesCombat.push_back(FighterWrapper(*u, *armyTempA, *armyTempB));
+			for(auto & u : armyTempB->getUnitList())
+				unitesCombat.push_back(FighterWrapper(*u, *armyTempB, *armyTempA));
+
+			while(unitesCombat.size() > 0 && armyTempA->size() > 0 && armyTempB->size() > 0) {
+				std::random_shuffle(unitesCombat.begin(), unitesCombat.end());
+				FighterWrapper fighter = unitesCombat.back();
+				Action* a = &ia(fighter.m_fighter, fighter.m_allies, fighter.m_ennemies);
+				a->execute();
+				delete (a);
+				fighter.m_ennemies->purge();
+				fighter.m_allies->purge();
+				unitesCombat.pop_back();
+				glutMainLoopEvent();
+			}
+		}
+	}
+
+	//glutMainLoop();
 
 	Terminate();
 
