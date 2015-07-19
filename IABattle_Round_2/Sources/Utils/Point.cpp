@@ -16,8 +16,8 @@ Point Point::getNextPosWithSpeed(const Point& position, float speed) const
 		float xTemp = (speed / distance) * (position.m_x - this->m_x) + this->m_x;
 		float yTemp = (speed / distance) * (position.m_y - this->m_y) + this->m_y;
 
-		float x = std::min(std::max(xTemp, X_MIN), X_MAX);
-		float y = std::min(std::max(yTemp, Y_MIN), Y_MAX);
+		float x = round(std::min(std::max(xTemp, X_MIN), X_MAX));
+		float y = round(std::min(std::max(yTemp, Y_MIN), Y_MAX));
 		return Point(x, y);
 	}
 	return Point(position);

@@ -3,10 +3,10 @@
 #include <math.h>
 #include <ostream>
 
-static const float X_MIN = 0.f;
-static const float X_MAX = 100.f;
-static const float Y_MIN = 0.f;
-static const float Y_MAX = 100.f;
+static const float X_MIN = -50.f;
+static const float X_MAX = 50.f;
+static const float Y_MIN = -50.f;
+static const float Y_MAX = 50.f;
 
 class Point
 {

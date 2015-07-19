@@ -1,15 +1,16 @@
-
 #pragma once
 
+#include "Point.h"
+
 static const float g_cubeVertices[] = {
-	-1.f, -1.f, 1.f,		// 0
-	1.f, -1.f, 1.f,  		// 1	
-	1.f, 1.f, 1.f,			// 2
-	-1.f, 1.f, 1.f,			// 3	
-	-1.f, -1.f, -1.f,		// 4
-	1.f, -1.f, -1.f,		// 5
-	1.f, 1.f, -1.f,			// 6
-	-1.f, 1.f, -1.f			// 7
+	-0.5f, -0.5f, 1.f,		// 0
+	0.5f, -0.5f, 1.f,  		// 1	
+	0.5f, 0.5f, 1.f,		// 2
+	-0.5f, 0.5f, 1.f,		// 3	
+	-0.5f, -0.5f, -1.f,		// 4
+	0.5f, -0.5f, -1.f,		// 5
+	0.5f, 0.5f, -1.f,		// 6
+	-0.5f, 0.5f, -1.f		// 7
 };
 
 static const unsigned short g_cubeIndices[] = {
@@ -25,4 +26,15 @@ static const unsigned short g_cubeIndices[] = {
 	3, 7, 4,
 	4, 5, 1, // bas
 	1, 0, 4
+};
+
+static const float g_groundVertices[] = {
+	X_MIN, Y_MIN, 0.f,		// 0
+	X_MAX, Y_MIN, 0.f,  	// 1	
+	X_MAX, Y_MAX, 0.f,		// 2
+	X_MIN, Y_MAX, 0.f,		// 3	
+	X_MIN, Y_MIN, -1.f,	// 4
+	X_MAX, Y_MIN, -1.f,	// 5
+	X_MAX, Y_MAX, -1.f,	// 6
+	X_MIN, Y_MAX, -1.f		// 7
 };

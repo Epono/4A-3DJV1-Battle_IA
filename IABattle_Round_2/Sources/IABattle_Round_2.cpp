@@ -6,9 +6,6 @@
 #include <chrono>
 #include <map>
 
-#include "Army.h"
-#include "UnitAI.h"
-
 /******************************************** Trucs OpenGL ***********************************************/
 // Windows specific
 #if _WIN32
@@ -34,177 +31,65 @@
 #include "Common/EsgiShader.h"
 EsgiShader basicShader;
 EsgiShader textureShader;
+EsgiShader groundShader;
+EsgiShader cubeShader;
 
 int previousTime = 0;
 
 GLuint cubeVBO;
 GLuint cubeIBO;
-GLuint textureObj;
-GLuint sceneFBO;
+GLuint groundVBO;
+GLuint groundIBO;
+GLuint groundTextureObj;
+
+GLuint characterTextureObj;
 
 #include "Utils/Cube.h"
 /******************************************** Trucs OpenGL ***********************************************/
+#include "Army.h"
+#include "UnitAI.h"
+#include "Utils/MatrixUtils.h"
+#include "Utils/GlutFuncs.h"
+
+typedef struct color_rgb {
+	color_rgb(float r, float g, float b) :_r(r), _g(g), _b(b) {
+	}
+	float _r;
+	float _g;
+	float _b;
+} color_rgb;
 
 // Prototypes : 
-void MouseFunc(int, int, int, int);
-void MotionFunc(int, int);
-void KeyboardFunc(unsigned char, int, int);
-void MouseWheelFunc(int, int, int, int);
 void Initialize();
 void CreateFBO(int, int);
 void Terminate();
-void Identity(float);
-void Orthographic(float, float, float, float, float, float, float);
-void Perspective(float, float, float, float, float, float);
-void MatrixProduct_4x4(float, const float, const float);
-void Translate(float, float, float, float);
-void RotateX(float, float);
-void RotateY(float, float);
-void RotateZ(float, float);
 void Render();
 void Update();
-void DrawCube(GLuint);
+void DrawUnitsAsCubes(GLuint);
+void DrawGround(GLuint program);
+void RenderString(float x, float y, const unsigned char* string, color_rgb const& rgb);
 
-// Global variables to control the scene
-float zoom = 15.0f;
-float rotx = 0.0;
-float rotz = 0.0f;
-float tx = 0;
-float ty = 0;
-int lastx = 0;
-int lasty = 0;
-unsigned char Buttons[3] = {0};
+color_rgb writingColor = color_rgb(1.f, 1.f, 0.f);
 
-float translationX = 0.f;
-float translationY = 0.f;
-float translationZ = 0.f;
+Army* armyTempA;
+Army* armyTempB;
 
-float step = 0.5f;
+void write() {
+	char* truc = "Selecting point";
+	//glRasterPos2f(100, 100);
+	glWindowPos2d(10, 10);
 
-/*
-* Function in charge of handling mouse events (clicking only, not dragging)
-*/
-void MouseFunc(int button, int state, int x, int y) {
-	lastx = x;
-	lasty = y;
-	switch(button) {
-	case GLUT_LEFT_BUTTON:
-		Buttons[0] = ((GLUT_DOWN == state) ? 1 : 0);
-		break;
-	case GLUT_MIDDLE_BUTTON:
-		Buttons[1] = ((GLUT_DOWN == state) ? 1 : 0);
-		break;
-	case GLUT_RIGHT_BUTTON:
-		Buttons[2] = ((GLUT_DOWN == state) ? 1 : 0);
-		break;
-	default:
-		break;
+	for(int i = 0; truc[i] != '\0'; i++) {
+		glutBitmapCharacter(GLUT_BITMAP_9_BY_15, truc[i]);
 	}
-
-	glutPostRedisplay();
 }
 
-/*
-* Function in charge of handling mouse events (dragging only, not clicking)
-*/
-void MotionFunc(int x, int y) {
-	int diffx = x - lastx;
-	int diffy = y - lasty;
-	lastx = x;
-	lasty = y;
+void RenderString(float x, float y, const unsigned char* string, color_rgb const& rgb) {
+	glColor3f(rgb._r, rgb._g, rgb._b);
+	//glWindowPos2d(x, y);
+	glRasterPos2f(x, y);
 
-	if(Buttons[0] && Buttons[1]) {
-		zoom -= (float) 0.05f * diffx;
-	}
-	else {
-
-		if(Buttons[0]) {
-			if(rotx + (float) 0.5f * diffy <= 0 && rotx + (float) 0.5f * diffy >= -60) {
-				rotx += (float) 0.5f * diffy;
-			}
-			rotz += (float) 0.5f * diffx;
-			if(rotz > 125) {
-				rotz -= 125;
-			}
-			else if(rotz < 0) {
-				rotz += 125;
-			}
-
-			float yaww = ((rotz / 125) * 360) - 90;
-			float pitchh = (rotx * -3);
-
-			float yaw = yaww * (3.14 / 180);
-			float pitch = pitchh * (3.14 / 180);
-			std::cout << "yaww : " << yaww << " - pitchh : " << pitchh << std::endl;
-
-
-			float xx = cos(yaw) * cos(pitch);
-			float yy = sin(yaw) * cos(pitch);
-			float zz = sin(pitch);
-			//std::cout << "(" << xx << ", " << yy << ", " << zz << ")" << std::endl;
-		}
-		else {
-
-			if(Buttons[1]) {
-				tx += (float) 0.05f * diffx;
-				ty -= (float) 0.05f * diffy;
-			}
-		}
-	}
-
-	glutPostRedisplay();
-}
-
-/*
-* Function in charge of handling keyboard events
-* key : key pressed
-* x, y : coordinates of the pointer when the key was pressed ?
-*/
-void KeyboardFunc(unsigned char key, int x, int y) {
-	switch(key) {
-	case 'a':
-		translationZ += step;
-		break;
-	case 'z':
-		translationY -= step;
-		break;
-	case 'e':
-		translationZ -= step;
-		break;
-	case 'q':
-		translationX += step;
-		break;
-	case 's':
-		translationY += step;
-		break;
-	case 'd':
-		translationX -= step;
-		break;
-	case '+':
-		step += 0.1f;
-		break;
-	case '-':
-		step -= 0.1f;
-		break;
-	case 27:
-		exit(0);
-	}
-
-	glutPostRedisplay();
-}
-
-/*
-* Function in charge of handling mouse scroll
-*/
-void MouseWheelFunc(int button, int dir, int x, int y) {
-	if(dir > 0) {
-		// Zoom in
-		translationZ += step;
-	}
-	else {
-		// Zoom out
-		translationZ -= step;
-	}
+	glutBitmapString(GLUT_BITMAP_HELVETICA_18, string);
 }
 
 void Initialize() {
@@ -227,7 +112,7 @@ void Initialize() {
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
-	//glFrontFace(GL_CW);
+	glFrontFace(GL_CW);
 
 	basicShader.LoadVertexShader("Resources/Shaders/basic.vs");
 	basicShader.LoadFragmentShader("Resources/Shaders/basic.fs");
@@ -236,6 +121,14 @@ void Initialize() {
 	textureShader.LoadVertexShader("Resources/Shaders/texture.vs");
 	textureShader.LoadFragmentShader("Resources/Shaders/texture.fs");
 	textureShader.Create();
+
+	groundShader.LoadVertexShader("Resources/Shaders/ground.vs");
+	groundShader.LoadFragmentShader("Resources/Shaders/ground.fs");
+	groundShader.Create();
+
+	cubeShader.LoadVertexShader("Resources/Shaders/cube.vs");
+	cubeShader.LoadFragmentShader("Resources/Shaders/cube.fs");
+	cubeShader.Create();
 
 	glGenBuffers(1, &cubeVBO);
 	glGenBuffers(1, &cubeIBO);
@@ -247,163 +140,106 @@ void Initialize() {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
+	glGenBuffers(1, &groundVBO);
+	glGenBuffers(1, &groundIBO);
+	glBindBuffer(GL_ARRAY_BUFFER, groundVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 8 * 3, g_groundVertices, GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, groundIBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort) * 6 * 2 * 3, g_cubeIndices, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
 	previousTime = glutGet(GLUT_ELAPSED_TIME);
 
 	int height = glutGet(GLUT_WINDOW_HEIGHT);
 	int width = glutGet(GLUT_WINDOW_WIDTH);
 
-	CreateFBO(width, height);
-}
 
-void CreateFBO(int width, int height) {
-	glGenTextures(1, &textureObj);
-	glBindTexture(GL_TEXTURE_2D, textureObj);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-	glGenFramebuffers(1, &sceneFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, sceneFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureObj, 0);
 
-	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	assert(status == GL_FRAMEBUFFER_COMPLETE);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	int x, y, n;
+	unsigned char *data = stbi_load("Resources/Textures/ground_2048x2048.jpg", &x, &y, &n, STBI_rgb_alpha);
+
+	glGenTextures(1, &groundTextureObj);
+	glBindTexture(GL_TEXTURE_2D, groundTextureObj);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	stbi_image_free(data);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// Character texture
+	const char* images[] = {
+		"Resources/Textures/lucas.jpg",
+		"Resources/Textures/lucas.jpg",
+		"Resources/Textures/lucas.jpg",
+		"Resources/Textures/lucas.jpg",
+		"Resources/Textures/lucas.jpg",
+		"Resources/Textures/lucas.jpg",
+	};
+
+	glGenTextures(1, &characterTextureObj);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, characterTextureObj);
+
+	x = -1, y = -1, n = -1;
+	for(GLuint i = 0; i < 6; i++) {
+		data = stbi_load(images[i], &x, &y, &n, STBI_rgb_alpha);
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		stbi_image_free(data);
+	}
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
 void Terminate() {
-	glDeleteTextures(1, &textureObj);
+	glDeleteTextures(1, &groundTextureObj);
+	glDeleteTextures(1, &characterTextureObj);
 	glDeleteBuffers(1, &cubeIBO);
 	glDeleteBuffers(1, &cubeVBO);
+	glDeleteBuffers(1, &groundIBO);
+	glDeleteBuffers(1, &groundVBO);
 
 	basicShader.Destroy();
 	textureShader.Destroy();
-
-	glDeleteFramebuffers(1, &sceneFBO);
-}
-
-void Identity(float *matrix) {
-	memset(matrix, 0, sizeof(float) * 16);
-	matrix[0] = 1.0f; matrix[5] = 1.0f; matrix[10] = 1.0f; matrix[15] = 1.0f;
-}
-
-void Orthographic(float *matrix, float L, float R, float T, float B, float N, float F) {
-	memset(matrix, 0, sizeof(float) * 16);
-	matrix[0] = 2.f / (R - L);
-	matrix[5] = 2.f / (T - B);
-	matrix[10] = -2.f / (F - N);
-	matrix[12] = -(R + L) / (R - L);
-	matrix[13] = -(T + B) / (T - B);
-	matrix[14] = -(F + N) / (F - N);
-	matrix[15] = 1.f;
-}
-
-void Perspective(float *matrix, float FOV, float width, float height, float N, float F) {
-	memset(matrix, 0, sizeof(float) * 16);
-	float aspect = width / height;
-
-	float xymax = N * tan(FOV * (3.141592f / 180.f) * 0.5f);
-	float ymin = -xymax;
-	float xmin = -xymax;
-	width = xymax - xmin;
-	height = xymax - ymin;
-	float depth = F - N;
-	float q = -(F + N) / depth;
-	float qn = -2.0f * (F*N) / depth;
-
-	float w = 2.0f * N / width;
-	w = w / aspect;
-	float h = 2.0f * N / height;
-
-	matrix[0] = w;
-	matrix[5] = h;
-	matrix[10] = q;
-	matrix[11] = -1.f;
-	matrix[14] = qn;
-}
-
-void MatrixProduct_4x4(float *matrix, const float *A, const float *B) {
-	for(int i = 0; i < 4; ++i) {
-		for(int j = 0; j < 4; ++j) {
-			matrix[i * 4 + j] = 0;
-			for(int k = 0; k < 4; ++k) {
-				matrix[i * 4 + j] += A[i * 4 + k] * B[k * 4 + j];
-			}
-		}
-	}
-}
-
-void Translate(float *matrix, float tx, float ty, float tz = 0.f) {
-	Identity(matrix);
-	matrix[12] = tx;
-	matrix[13] = ty;
-	matrix[14] = tz;
-}
-
-void RotateX(float *matrix, float angle) {
-	Identity(matrix);
-	matrix[5] = cos(angle);	matrix[9] = -sin(angle);
-	matrix[6] = sin(angle);	matrix[10] = cos(angle);
-}
-
-void RotateY(float *matrix, float angle) {
-	Identity(matrix);
-	matrix[0] = cos(angle);	matrix[8] = sin(angle);
-	matrix[2] = -sin(angle); matrix[10] = cos(angle);
-}
-
-void RotateZ(float *matrix, float angle) {
-	Identity(matrix);
-	matrix[0] = cos(angle); matrix[4] = -sin(angle);
-	matrix[1] = sin(angle); matrix[5] = cos(angle);
+	groundShader.Destroy();
+	cubeShader.Destroy();
 }
 
 void Render() {
-	glBindFramebuffer(GL_FRAMEBUFFER, sceneFBO);
-
-	glViewport(0, 0, glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT));
-	glClearColor(1.0f, 0.5f, 0.5f, 1.0f);
-	glClearDepth(1.F);
+	// Sky color (temp)
+	glClearColor(0.0f, 0.05f, 0.1f, 1.0f);
+	glClearDepth(1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glFrontFace(GL_CCW);
 
-	GLuint program = basicShader.GetProgram();
+	// Characters rendering
+	GLuint program = cubeShader.GetProgram();
 	glUseProgram(program);
+	DrawUnitsAsCubes(program);
 
-	//DrawCube(program);
-
-	glUseProgram(0);
-
-#if COPY_FBO
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, sceneFBO);
-	glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-#else
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glClearColor(0.0f, 0.5f, 0.5f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	program = textureShader.GetProgram();
+	// Ground rendering
+	program = groundShader.GetProgram();
 	glUseProgram(program);
+	glFrontFace(GL_CCW);
+	DrawGround(program);
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, textureObj);
-	GLint textureLocation = glGetUniformLocation(program, "u_texture");
-	glUniform1i(textureLocation, 0);
-	DrawCube(program);
-#endif
+	//RenderString(20, 20, (unsigned char*) "HELLO", writingColor);
+	//write();
 
 	glutSwapBuffers();
 	glutPostRedisplay();
 }
 
-Army* armyTempA = new Army(5, 20);
-Army* armyTempB = new Army(5, 20);
-
-void Update() {
-	//printf("Je m'affiche a un rythme de 60 fps ! (je crois)\n");
-}
-
-void DrawCube(GLuint program) {
+void DrawUnitsAsCubes(GLuint program) {
 	float w = (float) glutGet(GLUT_WINDOW_WIDTH);
 	float h = (float) glutGet(GLUT_WINDOW_HEIGHT);
 
@@ -413,20 +249,17 @@ void DrawCube(GLuint program) {
 	glEnableVertexAttribArray(positionLocation);
 	glVertexAttribPointer(positionLocation, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
 
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, characterTextureObj);
+	// glBindTexture(GL_TEXTURE_2D, groundTextureObj);
+	GLint textureLocation = glGetUniformLocation(program, "u_texture");
+	glUniform1i(textureLocation, 0);
+
 	// variables uniformes (constantes) durant le rendu de la primitive
 	float projection[16];
-	//Orthographic(projection, 0, w, h, 0, -1.f, 1.f);
-	Perspective(projection, 45.f, w, h, 0.1f, 1000.f);
+	Perspective(projection, 45.f, w, h, 1.f, 150.f);
 	GLint projLocation = glGetUniformLocation(program, "u_projectionMatrix");
 	glUniformMatrix4fv(projLocation, 1, GL_FALSE, projection);
-
-	int currentTime = glutGet(GLUT_ELAPSED_TIME);
-	int delta = currentTime - previousTime;
-	previousTime = currentTime;
-	static float time = 1.f;
-	time += delta / 1000.f;
-	GLint timeLocation = glGetUniformLocation(program, "u_time");
-	glUniform1f(timeLocation, time);
 
 	float viewTransform[16];
 	Identity(viewTransform);
@@ -439,7 +272,7 @@ void DrawCube(GLuint program) {
 
 	float A[16], B[16], C[16], worldTransformTemp[16];
 
-	Translate(A, translationX, translationY, translationZ);
+	Translate(A, tx, ty, zoom);
 	RotateZ(B, rotz / 20);
 	RotateX(C, rotx / 20);
 	//RotateY(B, rotx / 10); //Comme X, dans un autre sens
@@ -453,39 +286,78 @@ void DrawCube(GLuint program) {
 	GLint offsetLocation = glGetUniformLocation(program, "u_offset");
 	glUniform3f(offsetLocation, 0, 0, 0);
 
+	// Display units of armyTempA
 	GLint colorLocation = glGetUniformLocation(program, "u_color");
-	glUniform3f(colorLocation, 0, 0, 0);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
-
-	//for(int i = -10; i <= 10; i++) {
-	//	for(int j = -10; j <= 10; j++) {
-	//		glUniform3f(offsetLocation, (i * 3) + time, j * 3, 0);
-	//		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
-	//		glDrawElements(GL_TRIANGLES, 6 * 2 * 3, GL_UNSIGNED_SHORT, 0);
-	//	}
-	//}
-
+	glUniform3f(colorLocation, 0.1f, 0.1f, 0.1f);
 	for(auto & u : armyTempA->getUnitList()) {
-		glUniform3f(offsetLocation, u->getPosition().getX(), u->getPosition().getY(), 0);
-		glUniform3f(colorLocation, 0.2, 0.2, 0.2);
+		glUniform3f(offsetLocation, u->getPosition().getX() + 0.5f, u->getPosition().getY() - 0.5f, 1.f);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
 		glDrawElements(GL_TRIANGLES, 6 * 2 * 3, GL_UNSIGNED_SHORT, 0);
-		//std::cout << u->getPosition() << std::endl;
 	}
+	// Display units of armyTempB
+	glUniform3f(colorLocation, 0.5f, 0.5f, 0.5f);
 	for(auto & u : armyTempB->getUnitList()) {
-		glUniform3f(offsetLocation, u->getPosition().getX(), u->getPosition().getY(), 0);
-		glUniform3f(colorLocation, 0.8, 0.8, 0.8);
+		glUniform3f(offsetLocation, u->getPosition().getX() + 0.5f, u->getPosition().getY() - 0.5f, 1.f);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
 		glDrawElements(GL_TRIANGLES, 6 * 2 * 3, GL_UNSIGNED_SHORT, 0);
-		//std::cout << u->getPosition() << std::endl;
 	}
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+}
+
+void DrawGround(GLuint program) {
+	float w = (float) glutGet(GLUT_WINDOW_WIDTH);
+	float h = (float) glutGet(GLUT_WINDOW_HEIGHT);
+
+	// passage des attributs de sommet au shader
+	glBindBuffer(GL_ARRAY_BUFFER, groundVBO);
+	GLint positionLocation = glGetAttribLocation(program, "a_position");
+	glEnableVertexAttribArray(positionLocation);
+	glVertexAttribPointer(positionLocation, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, groundTextureObj);
+	GLint textureLocation = glGetUniformLocation(program, "u_texture");
+	glUniform1i(textureLocation, 0);
+
+	// variables uniformes (constantes) durant le rendu de la primitive
+	float projection[16];
+	Perspective(projection, 45.f, w, h, 0.1f, 150.f);
+	GLint projLocation = glGetUniformLocation(program, "u_projectionMatrix");
+	glUniformMatrix4fv(projLocation, 1, GL_FALSE, projection);
+
+	float viewTransform[16];
+	Identity(viewTransform);
+	viewTransform[14] = -7.0f;
+	GLint viewLocation = glGetUniformLocation(program, "u_viewMatrix");
+	glUniformMatrix4fv(viewLocation, 1, GL_FALSE, viewTransform);
+
+	float worldTransform[16];
+	Identity(worldTransform);
+
+	float A[16], B[16], C[16], worldTransformTemp[16];
+
+	Translate(A, tx, ty, zoom);
+	RotateZ(B, rotz / 20);
+	RotateX(C, rotx / 20);
+	//RotateY(B, rotx / 10); //Comme X, dans un autre sens
+
+	MatrixProduct_4x4(worldTransformTemp, A, B);
+	MatrixProduct_4x4(worldTransform, worldTransformTemp, C);
+
+	GLint worldLocation = glGetUniformLocation(program, "u_worldMatrix");
+	glUniformMatrix4fv(worldLocation, 1, GL_FALSE, worldTransform);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, groundIBO);
+	glDrawElements(GL_TRIANGLES, 6 * 2 * 3, GL_UNSIGNED_SHORT, 0);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 int main(int argc, char* argv[]) {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
-	glutInitWindowSize(800, 600);
+	glutInitWindowSize(1280, 720);
 	glutCreateWindow("BATTLE !");
 
 #ifdef FREEGLUT
@@ -501,12 +373,8 @@ int main(int argc, char* argv[]) {
 	glutMouseWheelFunc(MouseWheelFunc);
 	//glutIdleFunc(Update);
 
-
-
-
-
-	armyTempA = new Army(50, 20);
-	armyTempB = new Army(50, 20);
+	armyTempA = new Army(100, 20);
+	armyTempB = new Army(100, 20);
 
 	std::cout << std::endl;
 	std::cout << "Armee " << armyTempA->getArmyId() << " contre Armee " << armyTempB->getArmyId() << std::endl;
@@ -539,9 +407,10 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	//glutMainLoop();
-
 	Terminate();
-
 	return 0;
+}
+
+void Update() {
+	//printf("Je m'affiche a un rythme de 60 fps ! (je crois)\n");
 }

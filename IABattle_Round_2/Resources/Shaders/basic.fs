@@ -2,12 +2,15 @@
 varying vec3 v_normal;
 varying vec4 v_color;
 
-#define VERTEX_LIGHTING 0
+#define VERTEX_LIGHTING 1
 
-const vec3 c_lightDirection = vec3(1.0, 1.0, 0.0);
+const vec3 c_lightDirection = vec3(1.0, 1.0, -1.0);
+
+uniform samplerCube u_texture;
 
 void main(void)
 {
+/*
 #if VERTEX_LIGHTING
     gl_FragColor = v_color;
 #else
@@ -17,4 +20,6 @@ void main(void)
 
   	gl_FragColor = v_color * NdotL;
 #endif
+*/
+  	gl_FragColor = textureCube(u_texture, gl_TexCoord[0].stp);
 }

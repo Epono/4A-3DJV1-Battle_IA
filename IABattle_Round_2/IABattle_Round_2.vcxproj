@@ -46,6 +46,9 @@
     <ClInclude Include="Sources\Common\tiny_obj_loader.h" />
     <ClInclude Include="Sources\Unit.h" />
     <ClInclude Include="Sources\UnitAI.h" />
+    <ClInclude Include="Sources\Utils\Cube.h" />
+    <ClInclude Include="Sources\Utils\GlutFuncs.h" />
+    <ClInclude Include="Sources\Utils\MatrixUtils.h" />
     <ClInclude Include="Sources\Utils\Point.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
