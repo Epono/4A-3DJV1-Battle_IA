@@ -23,7 +23,7 @@
     <ClCompile Include="Sources\Capacities\WeaponSpeedCapacity.cpp" />
     <ClCompile Include="Sources\Common\EsgiShader.cpp" />
     <ClCompile Include="Sources\Common\tiny_obj_loader.cc" />
-    <ClCompile Include="Sources\IABattle_Round_2.cpp" />
+    <ClCompile Include="Sources\IABattleOpenGL.cpp" />
     <ClCompile Include="Sources\Unit.cpp" />
     <ClCompile Include="Sources\UnitAI.cpp" />
     <ClCompile Include="Sources\Utils\Point.cpp" />
@@ -54,7 +54,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{F054FFCA-8624-4DFD-8419-61268485C25D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>IABattle_Round_2</RootNamespace>
+    <RootNamespace>IABattleOpenGL</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

@@ -18,7 +18,7 @@
     <ClCompile Include="Sources\Army.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Sources\IABattle_Round_2.cpp">
+    <ClCompile Include="Sources\IABattleOpenGL.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Sources\Unit.cpp">
