@@ -64,7 +64,7 @@ void Initialize();
 void CreateFBO(int, int);
 void Terminate();
 void Render();
-void Update();
+void Update(int value);
 void DrawUnitsAsCubes(GLuint);
 void DrawGround(GLuint program);
 void RenderString(float x, float y, const unsigned char* string, color_rgb const& rgb);
@@ -272,10 +272,9 @@ void DrawUnitsAsCubes(GLuint program) {
 
 	float A[16], B[16], C[16], worldTransformTemp[16];
 
-	Translate(A, tx, ty, zoom);
+	Translate(A, tx, ty, tz);
 	RotateZ(B, rotz / 20);
 	RotateX(C, rotx / 20);
-	//RotateY(B, rotx / 10); //Comme X, dans un autre sens
 
 	MatrixProduct_4x4(worldTransformTemp, A, B);
 	MatrixProduct_4x4(worldTransform, worldTransformTemp, C);
@@ -290,14 +289,14 @@ void DrawUnitsAsCubes(GLuint program) {
 	GLint colorLocation = glGetUniformLocation(program, "u_color");
 	glUniform3f(colorLocation, 0.1f, 0.1f, 0.1f);
 	for(auto & u : armyTempA->getUnitList()) {
-		glUniform3f(offsetLocation, u->getPosition().getX() + 0.5f, u->getPosition().getY() - 0.5f, 1.f);
+		glUniform3f(offsetLocation, u->getPosition().getX() - 0.5f, u->getPosition().getY() - 0.5f, 1.f);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
 		glDrawElements(GL_TRIANGLES, 6 * 2 * 3, GL_UNSIGNED_SHORT, 0);
 	}
 	// Display units of armyTempB
 	glUniform3f(colorLocation, 0.5f, 0.5f, 0.5f);
 	for(auto & u : armyTempB->getUnitList()) {
-		glUniform3f(offsetLocation, u->getPosition().getX() + 0.5f, u->getPosition().getY() - 0.5f, 1.f);
+		glUniform3f(offsetLocation, u->getPosition().getX() - 0.5f, u->getPosition().getY() - 0.5f, 1.f);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
 		glDrawElements(GL_TRIANGLES, 6 * 2 * 3, GL_UNSIGNED_SHORT, 0);
 	}
@@ -337,7 +336,7 @@ void DrawGround(GLuint program) {
 
 	float A[16], B[16], C[16], worldTransformTemp[16];
 
-	Translate(A, tx, ty, zoom);
+	Translate(A, tx, ty, tz);
 	RotateZ(B, rotz / 20);
 	RotateX(C, rotx / 20);
 	//RotateY(B, rotx / 10); //Comme X, dans un autre sens
@@ -353,6 +352,10 @@ void DrawGround(GLuint program) {
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
+
+UnitAI ia;
+int nbTours = 0;
+std::vector<FighterWrapper> unitesCombat;
 
 int main(int argc, char* argv[]) {
 	glutInit(&argc, argv);
@@ -371,46 +374,42 @@ int main(int argc, char* argv[]) {
 	glutMouseFunc(MouseFunc);
 	glutMotionFunc(MotionFunc);
 	glutMouseWheelFunc(MouseWheelFunc);
-	//glutIdleFunc(Update);
+	glutTimerFunc(0, Update, 0);
 
 	armyTempA = new Army(100, 20);
 	armyTempB = new Army(100, 20);
 
-	std::cout << std::endl;
-	std::cout << "Armee " << armyTempA->getArmyId() << " contre Armee " << armyTempB->getArmyId() << std::endl;
-	UnitAI ia;
-	int nbTours = 0;
-	std::vector<FighterWrapper> unitesCombat;
-
-	while(1) {
-		while(armyTempA->size() > 0 && armyTempB->size() > 0) {
-			nbTours++;
-			//std::cout << "========== Tour " << nbTours << " ==========" << std::endl;
-			//Récupération des unités pour le tour
-			unitesCombat.clear();
-			for(auto & u : armyTempA->getUnitList())
-				unitesCombat.push_back(FighterWrapper(*u, *armyTempA, *armyTempB));
-			for(auto & u : armyTempB->getUnitList())
-				unitesCombat.push_back(FighterWrapper(*u, *armyTempB, *armyTempA));
-
-			while(unitesCombat.size() > 0 && armyTempA->size() > 0 && armyTempB->size() > 0) {
-				std::random_shuffle(unitesCombat.begin(), unitesCombat.end());
-				FighterWrapper fighter = unitesCombat.back();
-				Action* a = &ia(fighter.m_fighter, fighter.m_allies, fighter.m_ennemies);
-				a->execute();
-				delete (a);
-				fighter.m_ennemies->purge();
-				fighter.m_allies->purge();
-				unitesCombat.pop_back();
-				glutMainLoopEvent();
-			}
-		}
-	}
+	glutMainLoop();
 
 	Terminate();
 	return 0;
 }
 
-void Update() {
+void Update(int value) {
 	//printf("Je m'affiche a un rythme de 60 fps ! (je crois)\n");
+	nbTours++;
+	//std::cout << "========== Tour " << nbTours << " ==========" << std::endl;
+	//Récupération des unités pour le tour
+	unitesCombat.clear();
+	for(auto & u : armyTempA->getUnitList())
+		unitesCombat.push_back(FighterWrapper(*u, *armyTempA, *armyTempB));
+	for(auto & u : armyTempB->getUnitList())
+		unitesCombat.push_back(FighterWrapper(*u, *armyTempB, *armyTempA));
+
+	while(unitesCombat.size() > 0 && armyTempA->size() > 0 && armyTempB->size() > 0) {
+		std::random_shuffle(unitesCombat.begin(), unitesCombat.end());
+		FighterWrapper fighter = unitesCombat.back();
+		Action* a = &ia(fighter.m_fighter, fighter.m_allies, fighter.m_ennemies);
+		a->execute();
+		delete (a);
+		fighter.m_ennemies->purge();
+		fighter.m_allies->purge();
+		unitesCombat.pop_back();
+	}
+	if(armyTempA->size() == 0 || armyTempB->size() == 0) {
+		glutLeaveMainLoop();
+	}
+	else {
+		glutTimerFunc(500, Update, 0);
+	}
 }

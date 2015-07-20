@@ -8,11 +8,11 @@ void KeyboardFunc(unsigned char, int, int);
 void MouseWheelFunc(int, int, int, int);
 
 // Global variables to control the scene
-float zoom = -15.0f;
-float rotx = 0.0;
-float rotz = 0.0f;
-float tx = 0;
-float ty = 0;
+float rotx = -20.f;
+float rotz = 0.f;
+float tx = 0.f;
+float ty = 60.f;
+float tz = -20.0f;
 int lastx = 0;
 int lasty = 0;
 unsigned char Buttons[3] = {0};
@@ -96,13 +96,13 @@ void MotionFunc(int x, int y) {
 void KeyboardFunc(unsigned char key, int x, int y) {
 	switch(key) {
 	case 'a':
-		zoom += step;
+		tz += step;
 		break;
 	case 'z':
 		ty -= step;
 		break;
 	case 'e':
-		zoom -= step;
+		tz -= step;
 		break;
 	case 'q':
 		tx += step;
@@ -132,10 +132,10 @@ void KeyboardFunc(unsigned char key, int x, int y) {
 void MouseWheelFunc(int button, int dir, int x, int y) {
 	if(dir > 0) {
 		// Zoom in
-		zoom += step;
+		tz += step;
 	}
 	else {
 		// Zoom out
-		zoom -= step;
+		tz -= step;
 	}
 }
