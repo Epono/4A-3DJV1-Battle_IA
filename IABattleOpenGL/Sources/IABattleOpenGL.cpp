@@ -285,11 +285,15 @@ void DrawUnitsAsCubes(GLuint program) {
 	GLint offsetLocation = glGetUniformLocation(program, "u_offset");
 	glUniform3f(offsetLocation, 0, 0, 0);
 
+	GLint healthPercentageLocation = glGetUniformLocation(program, "u_healthPercentage");
+	glUniform1f(healthPercentageLocation, 0);
+
 	// Display units of armyTempA
 	GLint colorLocation = glGetUniformLocation(program, "u_color");
 	glUniform3f(colorLocation, 0.1f, 0.1f, 0.1f);
 	for(auto & u : armyTempA->getUnitList()) {
 		glUniform3f(offsetLocation, u->getPosition().getX() - 0.5f, u->getPosition().getY() - 0.5f, 1.f);
+		glUniform1f(healthPercentageLocation, (u->getHealth().getValue() / u->getHealth().getValueMax()));
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
 		glDrawElements(GL_TRIANGLES, 6 * 2 * 3, GL_UNSIGNED_SHORT, 0);
 	}
@@ -297,6 +301,7 @@ void DrawUnitsAsCubes(GLuint program) {
 	glUniform3f(colorLocation, 0.5f, 0.5f, 0.5f);
 	for(auto & u : armyTempB->getUnitList()) {
 		glUniform3f(offsetLocation, u->getPosition().getX() - 0.5f, u->getPosition().getY() - 0.5f, 1.f);
+		glUniform1f(healthPercentageLocation, (u->getHealth().getValue() / u->getHealth().getValueMax()));
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
 		glDrawElements(GL_TRIANGLES, 6 * 2 * 3, GL_UNSIGNED_SHORT, 0);
 	}
