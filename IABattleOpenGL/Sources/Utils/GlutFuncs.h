@@ -17,10 +17,6 @@ int lastx = 0;
 int lasty = 0;
 unsigned char Buttons[3] = {0};
 
-//float translationX = 0.f;
-//float translationY = 0.f;
-//float translationZ = 0.f;
-
 float step = 0.5f;
 
 /*

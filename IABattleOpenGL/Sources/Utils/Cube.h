@@ -33,8 +33,8 @@ static const float g_groundVertices[] = {
 	X_MAX, Y_MIN, 0.f,  	// 1	
 	X_MAX, Y_MAX, 0.f,		// 2
 	X_MIN, Y_MAX, 0.f,		// 3	
-	X_MIN, Y_MIN, -1.f,	// 4
-	X_MAX, Y_MIN, -1.f,	// 5
-	X_MAX, Y_MAX, -1.f,	// 6
+	X_MIN, Y_MIN, -1.f,		// 4
+	X_MAX, Y_MIN, -1.f,		// 5
+	X_MAX, Y_MAX, -1.f,		// 6
 	X_MIN, Y_MAX, -1.f		// 7
 };
