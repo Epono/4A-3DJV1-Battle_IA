@@ -42,7 +42,8 @@ GLuint groundVBO;
 GLuint groundIBO;
 GLuint groundTextureObj;
 
-GLuint characterTextureObj;
+GLuint lucasTextureObj;
+GLuint obiwanTextureObj;
 
 #include "Utils/Cube.h"
 /******************************************** Trucs OpenGL ***********************************************/
@@ -182,27 +183,55 @@ void Initialize() {
 		"Resources/Textures/lucas.jpg",
 	};
 
-	glGenTextures(1, &characterTextureObj);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, characterTextureObj);
+	glGenTextures(6, &lucasTextureObj);
+	glBindTexture(GL_TEXTURE_2D, lucasTextureObj);
 
 	x = -1, y = -1, n = -1;
 	for(GLuint i = 0; i < 6; i++) {
 		data = stbi_load(images[i], &x, &y, &n, STBI_rgb_alpha);
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D + i, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		stbi_image_free(data);
 	}
 
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// Character texture
+	const char* images2[] = {
+		"Resources/Textures/obiwan.jpg",
+		"Resources/Textures/obiwan.jpg",
+		"Resources/Textures/obiwan.jpg",
+		"Resources/Textures/obiwan.jpg",
+		"Resources/Textures/obiwan.jpg",
+		"Resources/Textures/obiwan.jpg",
+	};
+
+	glGenTextures(6, &obiwanTextureObj);
+	glBindTexture(GL_TEXTURE_2D, obiwanTextureObj);
+
+	x = -1, y = -1, n = -1;
+	for(GLuint i = 0; i < 6; i++) {
+		data = stbi_load(images2[i], &x, &y, &n, STBI_rgb_alpha);
+		glTexImage2D(GL_TEXTURE_2D + i, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		stbi_image_free(data);
+	}
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void Terminate() {
 	glDeleteTextures(1, &groundTextureObj);
-	glDeleteTextures(1, &characterTextureObj);
+	glDeleteTextures(1, &lucasTextureObj);
+	glDeleteTextures(1, &obiwanTextureObj);
 	glDeleteBuffers(1, &cubeIBO);
 	glDeleteBuffers(1, &cubeVBO);
 	glDeleteBuffers(1, &groundIBO);
@@ -250,8 +279,7 @@ void DrawUnitsAsCubes(GLuint program) {
 	glVertexAttribPointer(positionLocation, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, characterTextureObj);
-	// glBindTexture(GL_TEXTURE_2D, groundTextureObj);
+	glBindTexture(GL_TEXTURE_2D, lucasTextureObj);
 	GLint textureLocation = glGetUniformLocation(program, "u_texture");
 	glUniform1i(textureLocation, 0);
 
@@ -289,19 +317,24 @@ void DrawUnitsAsCubes(GLuint program) {
 	GLint colorLocation = glGetUniformLocation(program, "u_color");
 	glUniform3f(colorLocation, 0.1f, 0.1f, 0.1f);
 	for(auto & u : armyTempA->getUnitList()) {
-		glUniform3f(offsetLocation, u->getPosition().getX() - 0.5f, u->getPosition().getY() - 0.5f, 1.f);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
-		glDrawElements(GL_TRIANGLES, 6 * 2 * 3, GL_UNSIGNED_SHORT, 0);
-	}
-	// Display units of armyTempB
-	glUniform3f(colorLocation, 0.5f, 0.5f, 0.5f);
-	for(auto & u : armyTempB->getUnitList()) {
-		glUniform3f(offsetLocation, u->getPosition().getX() - 0.5f, u->getPosition().getY() - 0.5f, 1.f);
+		glUniform3f(offsetLocation, u->getPosition().getX() - 0.5f, u->getPosition().getY() + 0.5f, 1.f);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
 		glDrawElements(GL_TRIANGLES, 6 * 2 * 3, GL_UNSIGNED_SHORT, 0);
 	}
 
-	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, obiwanTextureObj);
+	textureLocation = glGetUniformLocation(program, "u_texture");
+	glUniform1i(textureLocation, 0);
+	// Display units of armyTempB
+	glUniform3f(colorLocation, 0.5f, 0.5f, 0.5f);
+	for(auto & u : armyTempB->getUnitList()) {
+		glUniform3f(offsetLocation, u->getPosition().getX() - 0.5f, u->getPosition().getY() + 0.5f, 1.f);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
+		glDrawElements(GL_TRIANGLES, 6 * 2 * 3, GL_UNSIGNED_SHORT, 0);
+	}
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void DrawGround(GLuint program) {
