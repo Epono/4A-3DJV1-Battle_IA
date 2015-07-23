@@ -6,7 +6,7 @@
 #include <chrono>
 #include <map>
 
-/******************************************** Trucs OpenGL ***********************************************/
+/******************************************** OpenGL ***********************************************/
 // Windows specific
 #if _WIN32
 #include <Windows.h>
@@ -32,7 +32,8 @@
 EsgiShader basicShader;
 EsgiShader textureShader;
 EsgiShader groundShader;
-EsgiShader cubeShader;
+EsgiShader skyBoxShader;
+EsgiShader characterShader;
 
 int previousTime = 0;
 
@@ -40,25 +41,20 @@ GLuint cubeVBO;
 GLuint cubeIBO;
 GLuint groundVBO;
 GLuint groundIBO;
-GLuint groundTextureObj;
+GLuint skyBoxVBO;
+GLuint skyBoxIBO;
 
+GLuint groundTextureObj;
+GLuint skyBoxTextureObj;
 GLuint lucasTextureObj;
 GLuint obiwanTextureObj;
 
 #include "Utils/Cube.h"
-/******************************************** Trucs OpenGL ***********************************************/
+/******************************************** Fin OpenGL ***********************************************/
 #include "Army.h"
 #include "UnitAI.h"
 #include "Utils/MatrixUtils.h"
 #include "Utils/GlutFuncs.h"
-
-typedef struct color_rgb {
-	color_rgb(float r, float g, float b) :_r(r), _g(g), _b(b) {
-	}
-	float _r;
-	float _g;
-	float _b;
-} color_rgb;
 
 // Prototypes : 
 void Initialize();
@@ -68,30 +64,10 @@ void Render();
 void Update(int value);
 void DrawUnitsAsCubes(GLuint);
 void DrawGround(GLuint program);
-void RenderString(float x, float y, const unsigned char* string, color_rgb const& rgb);
-
-color_rgb writingColor = color_rgb(1.f, 1.f, 0.f);
+void DrawSkyBox(GLuint program);
 
 Army* armyTempA;
 Army* armyTempB;
-
-void write() {
-	char* truc = "Selecting point";
-	//glRasterPos2f(100, 100);
-	glWindowPos2d(10, 10);
-
-	for(int i = 0; truc[i] != '\0'; i++) {
-		glutBitmapCharacter(GLUT_BITMAP_9_BY_15, truc[i]);
-	}
-}
-
-void RenderString(float x, float y, const unsigned char* string, color_rgb const& rgb) {
-	glColor3f(rgb._r, rgb._g, rgb._b);
-	//glWindowPos2d(x, y);
-	glRasterPos2f(x, y);
-
-	glutBitmapString(GLUT_BITMAP_HELVETICA_18, string);
-}
 
 void Initialize() {
 	printf("OpenGL Driver Version : %s\n", glGetString(GL_VERSION));
@@ -111,8 +87,8 @@ void Initialize() {
 	//	printf("Extension[%d] : %s\n", index, glGetStringi(GL_EXTENSIONS, index));
 	//}
 
+	glEnable(GL_TEXTURE_CUBE_MAP);
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
 	glFrontFace(GL_CW);
 
 	basicShader.LoadVertexShader("Resources/Shaders/basic.vs");
@@ -127,9 +103,13 @@ void Initialize() {
 	groundShader.LoadFragmentShader("Resources/Shaders/ground.fs");
 	groundShader.Create();
 
-	cubeShader.LoadVertexShader("Resources/Shaders/cube.vs");
-	cubeShader.LoadFragmentShader("Resources/Shaders/cube.fs");
-	cubeShader.Create();
+	skyBoxShader.LoadVertexShader("Resources/Shaders/skyBox.vs");
+	skyBoxShader.LoadFragmentShader("Resources/Shaders/skyBox.fs");
+	skyBoxShader.Create();
+
+	characterShader.LoadVertexShader("Resources/Shaders/cube.vs");
+	characterShader.LoadFragmentShader("Resources/Shaders/cube.fs");
+	characterShader.Create();
 
 	glGenBuffers(1, &cubeVBO);
 	glGenBuffers(1, &cubeIBO);
@@ -151,17 +131,27 @@ void Initialize() {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
+	glGenBuffers(1, &skyBoxVBO);
+	glGenBuffers(1, &skyBoxIBO);
+	glBindBuffer(GL_ARRAY_BUFFER, skyBoxVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 8 * 3, g_skyBoxVertices, GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skyBoxIBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLushort) * 6 * 2 * 3, g_cubeIndices, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
 	previousTime = glutGet(GLUT_ELAPSED_TIME);
 
 	int height = glutGet(GLUT_WINDOW_HEIGHT);
 	int width = glutGet(GLUT_WINDOW_WIDTH);
 
 
-
-
-
+	// Textures creation
 	int x, y, n;
-	unsigned char *data = stbi_load("Resources/Textures/ground_2048x2048.jpg", &x, &y, &n, STBI_rgb_alpha);
+	unsigned char *data;
+
+	data = stbi_load("Resources/Textures/ground_2048x2048.jpg", &x, &y, &n, STBI_rgb_alpha);
 
 	glGenTextures(1, &groundTextureObj);
 	glBindTexture(GL_TEXTURE_2D, groundTextureObj);
@@ -170,11 +160,10 @@ void Initialize() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	stbi_image_free(data);
-
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	// Character texture
-	const char* images[] = {
+	// Lucas texture
+	const char* lucasImages[6] = {
 		"Resources/Textures/lucas.jpg",
 		"Resources/Textures/lucas.jpg",
 		"Resources/Textures/lucas.jpg",
@@ -186,10 +175,9 @@ void Initialize() {
 	glGenTextures(6, &lucasTextureObj);
 	glBindTexture(GL_TEXTURE_2D, lucasTextureObj);
 
-	x = -1, y = -1, n = -1;
-	for(GLuint i = 0; i < 6; i++) {
-		data = stbi_load(images[i], &x, &y, &n, STBI_rgb_alpha);
-		glTexImage2D(GL_TEXTURE_2D + i, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	for(int i = 0; i < 6; i++) {
+		data = stbi_load(lucasImages[i], &x, &y, &n, STBI_rgb_alpha);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		stbi_image_free(data);
 	}
 
@@ -200,8 +188,8 @@ void Initialize() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	// Character texture
-	const char* images2[] = {
+	// Obiwan texture
+	const char* obiwanTextures[6] = {
 		"Resources/Textures/obiwan.jpg",
 		"Resources/Textures/obiwan.jpg",
 		"Resources/Textures/obiwan.jpg",
@@ -213,10 +201,9 @@ void Initialize() {
 	glGenTextures(6, &obiwanTextureObj);
 	glBindTexture(GL_TEXTURE_2D, obiwanTextureObj);
 
-	x = -1, y = -1, n = -1;
 	for(GLuint i = 0; i < 6; i++) {
-		data = stbi_load(images2[i], &x, &y, &n, STBI_rgb_alpha);
-		glTexImage2D(GL_TEXTURE_2D + i, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		data = stbi_load(obiwanTextures[i], &x, &y, &n, STBI_rgb_alpha);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 		stbi_image_free(data);
 	}
 
@@ -226,21 +213,54 @@ void Initialize() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 	glBindTexture(GL_TEXTURE_2D, 0);
+
+
+	// Skybox texture
+	const char* skyBoxTextures[6] = {
+		"Resources/Textures/obiwan.jpg",
+		"Resources/Textures/obiwan.jpg",
+		"Resources/Textures/obiwan.jpg",
+		"Resources/Textures/obiwan.jpg",
+		"Resources/Textures/obiwan.jpg",
+		"Resources/Textures/obiwan.jpg",
+	};
+
+	glActiveTexture(GL_TEXTURE0);
+	glEnable(GL_TEXTURE_CUBE_MAP);
+	glGenTextures(1, &skyBoxTextureObj);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyBoxTextureObj);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	for(GLuint i = 0; i < 6; i++) {
+		data = stbi_load(skyBoxTextures[i], &x, &y, &n, STBI_rgb_alpha);
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		stbi_image_free(data);
+	}
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void Terminate() {
 	glDeleteTextures(1, &groundTextureObj);
+	glDeleteTextures(1, &skyBoxTextureObj);
 	glDeleteTextures(1, &lucasTextureObj);
 	glDeleteTextures(1, &obiwanTextureObj);
 	glDeleteBuffers(1, &cubeIBO);
 	glDeleteBuffers(1, &cubeVBO);
 	glDeleteBuffers(1, &groundIBO);
 	glDeleteBuffers(1, &groundVBO);
+	glDeleteBuffers(1, &skyBoxIBO);
+	glDeleteBuffers(1, &skyBoxVBO);
 
 	basicShader.Destroy();
 	textureShader.Destroy();
 	groundShader.Destroy();
-	cubeShader.Destroy();
+	characterShader.Destroy();
+	skyBoxShader.Destroy();
 }
 
 void Render() {
@@ -251,7 +271,7 @@ void Render() {
 	glFrontFace(GL_CCW);
 
 	// Characters rendering
-	GLuint program = cubeShader.GetProgram();
+	GLuint program = characterShader.GetProgram();
 	glUseProgram(program);
 	DrawUnitsAsCubes(program);
 
@@ -261,6 +281,12 @@ void Render() {
 	glFrontFace(GL_CCW);
 	DrawGround(program);
 
+	// SkyBlox rendering
+	program = skyBoxShader.GetProgram();
+	glUseProgram(program);
+	glFrontFace(GL_CW);
+	DrawSkyBox(program);
+
 	//RenderString(20, 20, (unsigned char*) "HELLO", writingColor);
 	//write();
 
@@ -269,8 +295,7 @@ void Render() {
 }
 
 void DrawUnitsAsCubes(GLuint program) {
-	float w = (float) glutGet(GLUT_WINDOW_WIDTH);
-	float h = (float) glutGet(GLUT_WINDOW_HEIGHT);
+	Transformations(program, rotx, rotz, tx, ty, tz);
 
 	// passage des attributs de sommet au shader
 	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
@@ -282,33 +307,6 @@ void DrawUnitsAsCubes(GLuint program) {
 	glBindTexture(GL_TEXTURE_2D, lucasTextureObj);
 	GLint textureLocation = glGetUniformLocation(program, "u_texture");
 	glUniform1i(textureLocation, 0);
-
-	// variables uniformes (constantes) durant le rendu de la primitive
-	float projection[16];
-	Perspective(projection, 45.f, w, h, 1.f, 150.f);
-	GLint projLocation = glGetUniformLocation(program, "u_projectionMatrix");
-	glUniformMatrix4fv(projLocation, 1, GL_FALSE, projection);
-
-	float viewTransform[16];
-	Identity(viewTransform);
-	viewTransform[14] = -7.0f;
-	GLint viewLocation = glGetUniformLocation(program, "u_viewMatrix");
-	glUniformMatrix4fv(viewLocation, 1, GL_FALSE, viewTransform);
-
-	float worldTransform[16];
-	Identity(worldTransform);
-
-	float A[16], B[16], C[16], worldTransformTemp[16];
-
-	Translate(A, tx, ty, tz);
-	RotateZ(B, rotz / 20);
-	RotateX(C, rotx / 20);
-
-	MatrixProduct_4x4(worldTransformTemp, A, B);
-	MatrixProduct_4x4(worldTransform, worldTransformTemp, C);
-
-	GLint worldLocation = glGetUniformLocation(program, "u_worldMatrix");
-	glUniformMatrix4fv(worldLocation, 1, GL_FALSE, worldTransform);
 
 	GLint offsetLocation = glGetUniformLocation(program, "u_offset");
 	glUniform3f(offsetLocation, 0, 0, 0);
@@ -338,8 +336,7 @@ void DrawUnitsAsCubes(GLuint program) {
 }
 
 void DrawGround(GLuint program) {
-	float w = (float) glutGet(GLUT_WINDOW_WIDTH);
-	float h = (float) glutGet(GLUT_WINDOW_HEIGHT);
+	Transformations(program, rotx, rotz, tx, ty, tz);
 
 	// passage des attributs de sommet au shader
 	glBindBuffer(GL_ARRAY_BUFFER, groundVBO);
@@ -352,38 +349,30 @@ void DrawGround(GLuint program) {
 	GLint textureLocation = glGetUniformLocation(program, "u_texture");
 	glUniform1i(textureLocation, 0);
 
-	// variables uniformes (constantes) durant le rendu de la primitive
-	float projection[16];
-	Perspective(projection, 45.f, w, h, 0.1f, 150.f);
-	GLint projLocation = glGetUniformLocation(program, "u_projectionMatrix");
-	glUniformMatrix4fv(projLocation, 1, GL_FALSE, projection);
-
-	float viewTransform[16];
-	Identity(viewTransform);
-	viewTransform[14] = -7.0f;
-	GLint viewLocation = glGetUniformLocation(program, "u_viewMatrix");
-	glUniformMatrix4fv(viewLocation, 1, GL_FALSE, viewTransform);
-
-	float worldTransform[16];
-	Identity(worldTransform);
-
-	float A[16], B[16], C[16], worldTransformTemp[16];
-
-	Translate(A, tx, ty, tz);
-	RotateZ(B, rotz / 20);
-	RotateX(C, rotx / 20);
-	//RotateY(B, rotx / 10); //Comme X, dans un autre sens
-
-	MatrixProduct_4x4(worldTransformTemp, A, B);
-	MatrixProduct_4x4(worldTransform, worldTransformTemp, C);
-
-	GLint worldLocation = glGetUniformLocation(program, "u_worldMatrix");
-	glUniformMatrix4fv(worldLocation, 1, GL_FALSE, worldTransform);
-
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, groundIBO);
 	glDrawElements(GL_TRIANGLES, 6 * 2 * 3, GL_UNSIGNED_SHORT, 0);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void DrawSkyBox(GLuint program) {
+	Transformations(program, rotx, rotz, tx, ty, tz);
+
+	// passage des attributs de sommet au shader
+	glBindBuffer(GL_ARRAY_BUFFER, skyBoxVBO);
+	GLint positionLocation = glGetAttribLocation(program, "a_position");
+	glEnableVertexAttribArray(positionLocation);
+	glVertexAttribPointer(positionLocation, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyBoxTextureObj);
+	GLint textureLocation = glGetUniformLocation(program, "u_texture");
+	glUniform1i(textureLocation, 0);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skyBoxIBO);
+	glDrawElements(GL_TRIANGLES, 6 * 2 * 3, GL_UNSIGNED_SHORT, 0);
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
 UnitAI ia;
@@ -418,10 +407,10 @@ int main(int argc, char* argv[]) {
 	return 0;
 }
 
+// Mainloop
 void Update(int value) {
-	//printf("Je m'affiche a un rythme de 60 fps ! (je crois)\n");
 	nbTours++;
-	//std::cout << "========== Tour " << nbTours << " ==========" << std::endl;
+
 	//Récupération des unités pour le tour
 	unitesCombat.clear();
 	for(auto & u : armyTempA->getUnitList())
@@ -446,3 +435,38 @@ void Update(int value) {
 		glutTimerFunc(500, Update, 0);
 	}
 }
+
+
+// Unused
+
+/*
+typedef struct color_rgb {
+color_rgb(float r, float g, float b) :_r(r), _g(g), _b(b) {
+}
+float _r;
+float _g;
+float _b;
+} color_rgb;
+
+color_rgb writingColor = color_rgb(1.f, 1.f, 0.f);
+
+void write();
+void write() {
+char* truc = "Selecting point";
+//glRasterPos2f(100, 100);
+glWindowPos2d(10, 10);
+
+for(int i = 0; truc[i] != '\0'; i++) {
+glutBitmapCharacter(GLUT_BITMAP_9_BY_15, truc[i]);
+}
+}
+
+void RenderString(float x, float y, const unsigned char* string, color_rgb const& rgb);
+void RenderString(float x, float y, const unsigned char* string, color_rgb const& rgb) {
+glColor3f(rgb._r, rgb._g, rgb._b);
+//glWindowPos2d(x, y);
+glRasterPos2f(x, y);
+
+glutBitmapString(GLUT_BITMAP_HELVETICA_18, string);
+}
+*/

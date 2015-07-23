@@ -103,9 +103,6 @@
     <ClInclude Include="Sources\Common\EsgiShader.h" />
     <ClInclude Include="Sources\Common\stb_image.h" />
     <ClInclude Include="Sources\Common\tiny_obj_loader.h" />
-    <ClInclude Include="OldMain.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Sources\Utils\MatrixUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>

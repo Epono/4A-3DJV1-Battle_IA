@@ -8,6 +8,7 @@ void Translate(float, float, float, float);
 void RotateX(float, float);
 void RotateY(float, float);
 void RotateZ(float, float);
+void Transformations(GLuint program, float rotx, float rotz, float tx, float ty, float tz);
 
 void Identity(float *matrix) {
 	memset(matrix, 0, sizeof(float) * 16);
@@ -83,4 +84,35 @@ void RotateZ(float *matrix, float angle) {
 	Identity(matrix);
 	matrix[0] = cos(angle); matrix[4] = -sin(angle);
 	matrix[1] = sin(angle); matrix[5] = cos(angle);
+}
+
+void Transformations(GLuint program, float rotx, float rotz, float tx, float ty, float tz) {
+	float w = (float) glutGet(GLUT_WINDOW_WIDTH);
+	float h = (float) glutGet(GLUT_WINDOW_HEIGHT);
+
+	// variables uniformes (constantes) durant le rendu de la primitive
+	float projection[16];
+	Perspective(projection, 45.f, w, h, 1.f, 300.f);
+	GLint projLocation = glGetUniformLocation(program, "u_projectionMatrix");
+	glUniformMatrix4fv(projLocation, 1, GL_FALSE, projection);
+
+	float viewTransform[16];
+	Identity(viewTransform);
+	GLint viewLocation = glGetUniformLocation(program, "u_viewMatrix");
+	glUniformMatrix4fv(viewLocation, 1, GL_FALSE, viewTransform);
+
+	float worldTransform[16];
+	Identity(worldTransform);
+
+	float A[16], B[16], C[16], worldTransformTemp[16];
+
+	Translate(A, tx, ty, tz);
+	RotateZ(B, rotz);
+	RotateX(C, rotx);
+
+	MatrixProduct_4x4(worldTransformTemp, A, B);
+	MatrixProduct_4x4(worldTransform, worldTransformTemp, C);
+
+	GLint worldLocation = glGetUniformLocation(program, "u_worldMatrix");
+	glUniformMatrix4fv(worldLocation, 1, GL_FALSE, worldTransform);
 }

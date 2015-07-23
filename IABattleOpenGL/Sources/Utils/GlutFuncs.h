@@ -1,23 +1,21 @@
 #include <iostream>
 
-//#include <GL/freeglut.h>
-
 void MouseFunc(int, int, int, int);
 void MotionFunc(int, int);
 void KeyboardFunc(unsigned char, int, int);
 void MouseWheelFunc(int, int, int, int);
 
 // Global variables to control the scene
-float rotx = -20.f;
-float rotz = 0.f;
+float rotx = -1.f;
+float rotz = 3.15f;
 float tx = 0.f;
-float ty = 60.f;
+float ty = -60.f;
 float tz = -20.0f;
 int lastx = 0;
 int lasty = 0;
 unsigned char Buttons[3] = {0};
 
-float step = 0.5f;
+float step = 2.f;
 
 /*
 * Function in charge of handling mouse events (clicking only, not dragging)
@@ -52,16 +50,17 @@ void MotionFunc(int x, int y) {
 	lasty = y;
 
 	if(Buttons[0]) {
-		if(rotx + (float) 0.5f * diffy <= 0 && rotx + (float) 0.5f * diffy >= -60) {
-			rotx += (float) 0.5f * diffy;
+		if(rotx + (float) 0.005f * diffy <= 0 && rotx + (float) 0.005f * diffy >= -3) {
+			rotx += (float) 0.005f * diffy;
 		}
-		rotz += (float) 0.5f * diffx;
-		if(rotz > 125) {
-			rotz -= 125;
+		rotz += (float) 0.005f * diffx;
+		if(rotz > 6.275) {
+			rotz -= 6.275;
 		}
 		else if(rotz < 0) {
-			rotz += 125;
+			rotz += 6.275;
 		}
+
 
 		float yaww = ((rotz / 125) * 360) - 90;
 		float pitchh = (rotx * -3);
@@ -77,8 +76,8 @@ void MotionFunc(int x, int y) {
 		//std::cout << "(" << xx << ", " << yy << ", " << zz << ")" << std::endl;
 	}
 	else if(Buttons[1]) {
-		tx += (float) 0.05f * diffx;
-		ty -= (float) 0.05f * diffy;
+		tx -= (float) 0.05f * diffx;
+		ty += (float) 0.05f * diffy;
 	}
 
 	glutPostRedisplay();
@@ -95,19 +94,19 @@ void KeyboardFunc(unsigned char key, int x, int y) {
 		tz += step;
 		break;
 	case 'z':
-		ty -= step;
+		ty += step;
 		break;
 	case 'e':
 		tz -= step;
 		break;
 	case 'q':
-		tx += step;
+		tx -= step;
 		break;
 	case 's':
-		ty += step;
+		ty -= step;
 		break;
 	case 'd':
-		tx -= step;
+		tx += step;
 		break;
 	case '+':
 		step += 0.1f;

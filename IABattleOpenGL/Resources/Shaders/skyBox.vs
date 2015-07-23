@@ -7,7 +7,7 @@ uniform mat4 u_worldMatrix;
 uniform vec3 u_offset;
 uniform vec3 u_color;
 
-varying vec2 v_texCoords;
+varying vec3 v_texCoords;
 
 void main(void)
 {
